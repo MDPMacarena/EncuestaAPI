@@ -1,4 +1,5 @@
 ﻿using EncuestaAPI.Models;
+using EncuestaAPI.Models.DTOs;
 using EncuestaAPI.Repositories;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,22 +16,22 @@ namespace EncuestaAPI.Services
         }
         public IConfiguration Configuration { get; }
         public Repository<Usuario> Repositoryy { get; }
-        public string? GenerateToken(Usuario dto)
+        public string? GenerateToken(UsuarioDTO dto)
         {
             var usuario = Repositoryy.GetAll()
-                 .FirstOrDefault(u => u.NumControl == dto.NumControl && u.Contrsena == dto.Contrsena);
+                 .FirstOrDefault(u => u.NumControl == dto.NumControl && u.Contrsena == dto.Contraseña);
             if (usuario == null)
             {
-                return null; // Usuario no encontrado o credenciales incorrectas
+                return null; // Usuario no encontrado o credenciales incorrectas  
             }
             else
             {
-                List<Claim> claims = new List<Claim>
-                {
-                    new Claim("Id",usuario.Id.ToString()),
-                    new Claim("Nombre",usuario.Nombre),
-                    new Claim("NumControl",usuario.NumControl)
-                };
+                List<Claim> claims = new List<Claim>()
+                   {
+                       new Claim("Id", usuario.Id.ToString()),
+                       new Claim(ClaimTypes.Name, usuario.Nombre),
+                       new Claim("NumControl", usuario.NumControl)
+                   };
                 var descriptor = new JwtSecurityToken(
                    issuer: Configuration["Jwt:Issuer"],
                    audience: Configuration["Jwt:Audience"],
@@ -41,7 +42,7 @@ namespace EncuestaAPI.Services
                        System.Text.Encoding.UTF8.GetBytes(Configuration["Jwt:Key"])), SecurityAlgorithms.HmacSha256)
                    );
                 var handler = new JwtSecurityTokenHandler();
-                return handler.WriteToken(descriptor); // Genera el token JWT
+                return handler.WriteToken(descriptor); // Genera el token JWT  
             }
         }
     }
