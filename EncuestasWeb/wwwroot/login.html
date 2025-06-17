@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+
+    <title>Login</title>
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Encuestas</a></h1>
+    </header>
+    <main>
+        <form id="login">
+            <input id="numControl" name="numControl" type="text" placeholder="Número de control"><br>
+            <input id="contrasena" name="contrasena" type="password" placeholder="Contraseña"><br>
+            <p style="font-size:20px; color:red;" id="error"></p>
+            <button type="submit">Inicio</button>
+        </form>
+    </main>
+
+    <script>
+        document.querySelector("form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            let dto = {
+                numControl: document.getElementById("numControl").value,
+                contraseña: document.getElementById("contrasena").value
+            };
+            console.log(`Control: ${dto.numControl}, Contra: ${dto.contraseña}`);
+
+            try {
+                let response = await fetch("https://localhost:7154/api/usuarios/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(dto)
+                });
+
+                if (response.ok) {
+                    const token = await response.text();
+                    sessionStorage.token = token;
+                    window.location.href = "inicio.html";
+                } else {
+                    const error = await response.text();
+                    document.getElementById("error").textContent = error;
+                }
+            } catch (error) {
+                alert("Error de red o servidor: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

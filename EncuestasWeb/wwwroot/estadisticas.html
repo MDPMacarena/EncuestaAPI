@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <title>Document</title>
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Encuestas</a></h1>
+        <div id="menuPc">
+            <a href="crear.html">Crear</a>
+            <a href="inicio.html">Encuestas</a>
+            <a href="realizadas.html">Estadísticas</a>
+            <a id="cerrarSesion" href="" class="material-symbols-outlined">person</a>
+        </div>
+    </header>
+    <!--movil-->
+    <aside id="menuMovil" style="translate: -70vw;">
+        <a id="menu" class="material-symbols-outlined">menu</a>
+        <a href="" class="material-symbols-outlined"><span>Administrador</span> person</a><br>
+        <a href="inicio.html">Encuestas</a><br>
+        <a href="realizadas.html">Realizadas</a><br>
+        <a href="estadisticas.html">Estadísticas</a><br>
+        <a id="cerrarSesion" href="index.html">Cerrar sesión</a><br>
+    </aside>
+    <main>
+        <div>
+            <label>Encuestas creadas<span>10</span></label><br>
+            <label>Total alumnos entrevistados <span>100</span></label><br>
+            <label>Encuestas activas <span>8</span></label>
+            <h3>Registro</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Encuesta</th>
+                        <th>Nombre</th>
+                        <th>Última respuesta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Servicios</td>
+                        <td>soda</td>
+                        <td>soda</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script src="dinamic.js"></script>
+</body>
+</html>

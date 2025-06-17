@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <title>Document</title>
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Encuestas</a></h1>
+        <div id="menuPc">
+            <a href="crear.html">Crear</a>
+            <a href="inicio.html">Encuestas</a>
+            <a href="realizadas.html">Estadísticas</a>
+            <a id="cerrarSesion" href="" class="material-symbols-outlined">person</a>
+        </div>
+    </header>
+    <!--movil-->
+    <aside id="menuMovil" style="translate: -70vw;">
+        <a id="menu" class="material-symbols-outlined">menu</a>
+        <a href="" class="material-symbols-outlined"><span>Administrador</span> person</a><br>
+        <a href="inicio.html">Encuestas</a><br>
+        <a href="realizadas.html">Realizadas</a><br>
+        <a href="estadisticas.html">Estadísticas</a><br>
+        <a id="cerrarSesion" href="index.html">Cerrar sesión</a><br>
+    </aside>
+    <main>
+        <div>
+            <a href="inicio.html"><input type="button" value="Regresar" /></a>
+            <form class="base" id="agregarRespuesta">
+                <h2 id="tituloEncuesta" style="color: #6D862F;"></h2>
+                <label>Nombre</label>
+                <input id="nombreEncuestado" type="text" placeholder="Escribir...">
+                <label>Número de control</label>
+                <input id="numeroControl" type="text" placeholder="Escribir..."><br>
+                <div id="preguntas">
+
+                </div>
+                <!--<table>
+                    <thead>
+                        <tr>
+                            <th>Pregunta</th>
+                            <th>5</th>
+                            <th>4</th>
+                            <th>3</th>
+                            <th>2</th>
+                            <th>1</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>-->
+                <!--renglon-->
+                <!--<td>¿qué te parecio la comida? asasa asasasasa asa</td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                    </tbody>
+                </table>-->
+                <p id="error" style="color:red;"></p>
+                <button type="submit">Guardar</button>
+            </form>
+        </div>
+    </main>
+    <script src="dinamic.js"></script>
+    <!--<script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const token = sessionStorage.getItem("token");
+            if (!token) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            // busco el id dela encuesta
+            const buscar = new URLSearchParams(window.location.search);
+            const encuestaId = buscar.get('id');
+            if (!encuestaId) {
+                mostrarError("No se especificó encuesta");
+                return;
+            }
+            const config = {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            };
+
+            // cuando encuestra la encuesta
+            try {
+                const [encuestaResponse, preguntasResponse] = await Promise.all([
+                    fetch(`https://localhost:7154/api/ListaEncuesta/${encuestaId}`, config),
+                    fetch(`https://localhost:7154/api/ListaEncuesta/Preguntas?encuestaId=${encuestaId}`, config)
+                ]);
+
+                if (!encuestaResponse.ok || !preguntasResponse.ok) {
+                    throw new Error("Error al cargar datos de la encuesta");
+                }
+                const encuesta = await encuestaResponse.json();
+                const preguntas = await preguntasResponse.json();
+
+                document.getElementById("tituloEncuesta").textContent = encuesta.nombre;
+                renderizarPreguntas(preguntas);
+
+            }
+            catch (error) {
+                mostrarError(error.message);
+            };
+
+            document.getElementById("agregarRespuesta").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                await enviarRespuestas(encuestaId, token);
+            });
+        });
+                try {
+                    const nombre = document.getElementById("nombreEncuestado").value.trim();
+                    const numeroControl = document.getElementById("numeroControl").value.trim();
+
+                    if (!nombre) throw new Error("Por favor ingresa tu nombre");
+                    if (!numeroControl) throw new Error("Por favor ingresa tu número de control");
+
+                    const aplicacionResponse = await fetch(`https://localhost:7154/api/ListaEncuesta/AplicacionActiva?encuestaId=${encuestaId}`, config);
+                    if (!aplicacionResponse.ok) {
+                        throw new Error("No hay una aplicación activa para esta encuesta");
+                    }
+                    const aplicacionData = await aplicacionResponse.json();
+                    const aplicacionId = aplicacionData.id;
+
+                    const respuestas = [];
+                    document.querySelectorAll("input[type='radio']:checked").forEach(radio => {
+                        respuestas.push({
+                            preguntaId: parseInt(radio.dataset.preguntaId),
+                            valor: parseInt(radio.value)
+                        });
+                    });
+
+                    const response = await fetch("https://localhost:7154/api/ListaEncuesta/GuardarRespuesta", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            aplicacionId: aplicacionId,
+                            nombreRespondedor: nombre,
+                            numeroControl: numeroControl,
+                            respuestas: respuestas
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || "Error al guardar respuestas");
+                    }
+
+                    alert("Respuestas guardadas con éxito!");
+                    window.location.href = "inicio.html";
+                } catch (error) {
+                    mostrarError(error.message);
+                }
+            });
+        }
+
+
+        function renderizarPreguntas(preguntas) {
+            const container = document.getElementById("preguntas");
+            container.innerHTML =
+                `<table>
+                                <thead>
+                                    <tr>
+                                        <th>Pregunta</th>
+                                        <th>5 (Excelente)</th>
+                                        <th>4</th>
+                                        <th>3</th>
+                                        <th>2</th>
+                                        <th>1 (Deficiente)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preguntasTBody"></tbody>
+                            </table>`;
+            const tbody = document.getElementById("preguntasTBody");
+            preguntas.forEach((pregunta) => {
+                const row = document.createElement("tr");
+                row.dataset.preguntaId = pregunta.id;
+                row.innerHTML = `<td>${pregunta.texto || pregunta.Texto}</td>
+                                                ${[5, 4, 3, 2, 1].map(val => `
+                                    <td>
+                                        <input type="radio" name="pregunta_${pregunta.id || pregunta.Id}" value="${val}" data-pregunta-id="${pregunta.id}" required>
+                                    </td>`).join('')}`;
+                tbody.appendChild(row);
+            });
+        }
+        async function enviarRespuestas(encuestaId, token) {
+            const nombre = document.getElementById("nombreEncuestado").value.trim();
+            const numeroControl = document.getElementById("numeroControl").value.trim();
+
+            if (!nombre) {
+                throw new Error("Por favor ingresa tu nombre");
+            }
+            if (!numeroControl) {
+                throw new Error("Por favor ingresa tu número de control");
+            }
+
+            const aplicacionId = await obtenerAplicacionId(encuestaId, token);
+
+            const respuestas = [];
+            document.querySelectorAll("input[type='radio']:checked").forEach(radio => {
+                respuestas.push({
+                    preguntaId: parseInt(radio.dataset.preguntaId),
+                    valor: parseInt(radio.value)
+                });
+            });
+
+            try {
+                const response = await fetch("https://localhost:7154/api/ListaEncuesta/GuardarRespuesta", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        aplicacionId: aplicacionId,
+                        nombreRespondedor: nombre,
+                        numeroControl: numeroControl,
+                        respuestas: respuestas
+                    })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || "Error al guardar");
+
+                alert("Respuestas guardadas con éxito!");
+                window.location.href = "inicio.html";
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+    </script>-->
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const token = sessionStorage.getItem("token");
+            if (!token) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            // Obtener ID de la encuesta
+            const buscar = new URLSearchParams(window.location.search);
+            const encuestaId = buscar.get('id');
+            if (!encuestaId) {
+                mostrarError("No se especificó encuesta");
+                return;
+            }
+
+            const config = {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            };
+
+            try {
+                // Cargar datos en paralelo
+                const [encuestaResponse, preguntasResponse] = await Promise.all([
+                    fetch(`https://localhost:7154/api/ListaEncuesta/${encuestaId}`, config),
+                    fetch(`https://localhost:7154/api/ListaEncuesta/Preguntas?encuestaId=${encuestaId}`, config)
+                ]);
+
+                if (!encuestaResponse.ok || !preguntasResponse.ok) {
+                    throw new Error("Error al cargar datos de la encuesta");
+                }
+
+                const encuesta = await encuestaResponse.json();
+                const preguntas = await preguntasResponse.json();
+
+                // Mostrar título y preguntas
+                document.getElementById("tituloEncuesta").textContent = encuesta.nombre || encuesta.Nombre;
+                renderizarPreguntas(preguntas);
+
+            } catch (error) {
+                mostrarError(error.message);
+                console.error("Error:", error);
+            }
+
+            // Manejador del formulario
+            document.getElementById("agregarRespuesta").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                await enviarRespuestas(encuestaId, token);
+            });
+        });
+
+        function renderizarPreguntas(preguntas) {
+            const container = document.getElementById("preguntas");
+            if (!container) {
+                console.error("No se encontró el contenedor de preguntas");
+                return;
+            }
+
+            // Verificar si hay preguntas
+            if (!preguntas || preguntas.length === 0) {
+                container.innerHTML = "<p>No hay preguntas para esta encuesta</p>";
+                return;
+            }
+
+            // Crear tabla
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pregunta</th>
+                            <th>5 (Excelente)</th>
+                            <th>4</th>
+                            <th>3</th>
+                            <th>2</th>
+                            <th>1 (Deficiente)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            // Añadir cada pregunta
+            preguntas.forEach(pregunta => {
+                const preguntaId = pregunta.id || pregunta.Id;
+                const textoPregunta = pregunta.texto || pregunta.Texto;
+
+                html += `
+                    <tr data-pregunta-id="${preguntaId}">
+                        <td>${textoPregunta}</td>`;
+
+                // Añadir opciones de respuesta
+                for (let valor = 5; valor >= 1; valor--) {
+                    html += `
+                        <td>
+                            <input type="radio"
+                                   name="pregunta_${preguntaId}"
+                                   value="${valor}"
+                                   data-pregunta-id="${preguntaId}"
+                                   required>
+                        </td>`;
+                }
+
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        async function enviarRespuestas(encuestaId, token) {
+            const nombre = document.getElementById("nombreEncuestado").value.trim();
+            const numeroControl = document.getElementById("numeroControl").value.trim();
+
+            // 2. Recolectar respuestas
+            const respuestas = [];
+            document.querySelectorAll("input[type='radio']:checked").forEach(radio => {
+                respuestas.push({
+                    preguntaId: parseInt(radio.dataset.preguntaId),
+                    valor: parseInt(radio.value)
+                });
+            });
+
+            // 3. Enviar todo al backend
+            try {
+                const response = await fetch("https://localhost:7154/api/ListaEncuesta/GuardarRespuesta", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        encuestaId: encuestaId, // ¡IMPORTANTE!
+                        nombreRespondedor: nombre,
+                        numeroControl: numeroControl,
+                        respuestas: respuestas
+                    })
+                });
+
+                if (!response.ok) throw new Error("Error al guardar");
+
+                alert("¡Respuestas guardadas con éxito!");
+                window.location.href = "inicio.html";
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+            //try {
+            //    const nombre = document.getElementById("nombreEncuestado").value.trim();
+            //    const numeroControl = document.getElementById("numeroControl").value.trim();
+
+            //    if (!nombre) throw new Error("Por favor ingresa tu nombre");
+            //    if (!numeroControl) throw new Error("Por favor ingresa tu número de control");
+
+            //    const config = {
+            //        headers: {
+            //            "Authorization": `Bearer ${token}`,
+            //            "Content-Type": "application/json"
+            //        }
+            //    };
+
+            //    const aplicacionResponse = await fetch(`https://localhost:7154/api/ListaEncuesta/AplicacionActiva?encuestaId=${encuestaId}`, config);
+            //    if (!aplicacionResponse.ok) {
+            //        const errorData = await aplicacionResponse.json();
+            //        throw new Error("No hay una aplicación activa para esta encuesta");
+            //    }
+
+            //    const aplicacionData = await aplicacionResponse.json();
+            //    const aplicacionId = aplicacionData.id;
+
+            //    const respuestas = [];
+            //    document.querySelectorAll("input[type='radio']:checked").forEach(radio => {
+            //        respuestas.push({
+            //            preguntaId: parseInt(radio.dataset.preguntaId),
+            //            valor: parseInt(radio.value)
+            //        });
+            //    });
+            //    // Enviar respuestas
+            //    const response = await fetch("https://localhost:7154/api/ListaEncuesta/GuardarRespuesta", {
+            //        method: "POST",
+            //        headers: {
+            //            "Content-Type": "application/json",
+            //            "Authorization": `Bearer ${token}`
+            //        },
+            //        body: JSON.stringify({
+            //            encuestaId: encuestaId,
+            //            aplicacionId: aplicacionId,
+            //            nombreRespondedor: nombre,
+            //            numeroControl: numeroControl,
+            //            respuestas: respuestas
+            //        })
+            //    });
+
+            //    if (!response.ok) {
+            //        const errorData = await response.json();
+            //        throw new Error(errorData.message || "Error al guardar respuestas");
+            //    }
+
+            //    alert("Respuestas guardadas con éxito!");
+            //    window.location.href = "inicio.html";
+
+            //} catch (error) {
+            //    mostrarError(error.message);
+            //}
+        }
+
+        function mostrarError(mensaje) {
+            const errorElement = document.getElementById("error");
+            if (errorElement) {
+                errorElement.textContent = mensaje;
+                setTimeout(() => {
+                    errorElement.textContent = "";
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <title>Document</title>
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Encuestas</a></h1>
+        <div id="menuPc">
+            <a href="crear.html">Crear</a>
+            <a href="inicio.html">Encuestas</a>
+            <a href="realizadas.html">Estadísticas</a>
+            <a id="cerrarSesion" href="" class="material-symbols-outlined">person</a>
+        </div>
+    </header>
+    <!--movil-->
+    <aside id="menuMovil" style="translate: -70vw;">        
+        <a id="menu" class="material-symbols-outlined">menu</a>
+        <a href="" class="material-symbols-outlined"><span>Administrador</span> person</a><br>
+        <a href="inicio.html">Encuestas</a><br>
+        <a href="realizadas.html">Realizadas</a><br>
+        <a href="estadisticas.html">Estadísticas</a><br>
+        <a id="cerrarSesion" href="index.html">Cerrar sesión</a><br>
+    </aside>
+
+
+    <main>
+        <button onclick="history.back()" aria-label="Regresar">
+        </button>
+        <form class="base" id="CrearEncuesta">
+            <label>Título</label><br>
+            <input id="titulo" name="Nombre" type="text" placeholder="Escribir...">
+            <div id="lienzo">
+                <label>1.</label>
+                <input type="text" name="pregunta" placeholder="Escribir...">
+            </div>
+            <button type="button" id="agregarPregunta">Agregar pregunta +</button>
+            <p style="font-size:20px; color:red;" id="error"></p>
+            <button type="submit">Guardar</button>
+        </form>
+    </main>
+</body>
+</html>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const agregarPregunta = document.querySelector("#agregarPregunta")
+        agregarPregunta.addEventListener("click", agregarNuevaPregunta);
+        const form = document.getElementById("CrearEncuesta");
+        form.addEventListener("submit", enviarEncuesta);
+    });
+            const lienzo = document.getElementById("lienzo");
+            let conteo = 2;
+            const totalPreguntas = 10;
+            function agregarNuevaPregunta(){
+                if(conteo <= totalPreguntas){
+                    const nuevaPregunta = document.createElement('div');
+                    nuevaPregunta.innerHTML = `<label>${conteo}.</label>
+                    <input type="text" name="pregunta" placeholder="Escribir..." required>`;
+                    lienzo.appendChild(nuevaPregunta);
+                    conteo++;
+                }
+                else{
+                    nuevaPregunta.disabled = true;
+                }
+            };
+
+
+            // Enviar datos al hacer submit
+            async function enviarEncuesta(e) {
+            e.preventDefault();
+
+            const titulo = document.getElementById("titulo").value.trim();
+            const preguntas = Array.from(document.querySelectorAll("#lienzo input[name='pregunta']")).map(input => input.value.trim())
+                                .filter(p => p !== "");
+
+            const error = document.getElementById("error");
+            if (!titulo) {
+                error.textContent = "Debe llevar un título...";
+                return;
+            }
+            if (preguntas.length === 0) {
+                error.textContent = "La encuesta debe tener al menos una pregunta";
+                return;
+            }
+            const token = sessionStorage.getItem("token");
+            if (!token) {
+                window.location.href = "index.html";
+                return;
+            }
+
+                const btn = event.target.querySelector("button[type='submit']");
+                btn.disabled = true;
+                btn.textContent = "Guardando...";
+
+            try {
+                const response = await fetch("https://localhost:7154/api/ListaEncuesta", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        Nombre: titulo,
+                        Preguntas: preguntas
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Error al guardar la encuesta");
+                }
+
+                alert("Encuesta guardada con exito!");
+                window.location.href = "inicio.html";
+            }
+            catch (error) {
+                error.textContent = error.message;
+            }
+        };
+
+
+</script>
+
+ 
