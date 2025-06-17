@@ -173,8 +173,6 @@ namespace EncuestaAPI.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
-
-
         [HttpPost]
         public IActionResult Post([FromBody] ListaEncuestaDTO dto)
         {
@@ -232,14 +230,20 @@ namespace EncuestaAPI.Controllers
                 });
             }
         }
-
         [HttpPut("{id}")]
         public IActionResult Put(ListaEncuestaDTO drto)
         {
             var encuestaExistente = EncuestaRepository.Get(drto.Id);
             if (encuestaExistente == null)
             {
-                return NotFound("No se encontro la encuesta.");
+                return NotFound("No se encontró la encuesta.");
+            }
+
+            // ✅ Validar si ya fue aplicada
+            var yaAplicada = AplicacionRepository.GetAll().Any(a => a.IdEncuesta == drto.Id);
+            if (yaAplicada)
+            {
+                return BadRequest("No se puede editar una encuesta que ya ha sido aplicada.");
             }
 
             var validationResult = Validator.Validate(new Encuesta
@@ -257,7 +261,6 @@ namespace EncuestaAPI.Controllers
                 return BadRequest("El ID y el Nombre son requeridos.");
             }
 
-
             encuestaExistente.Nombre = drto.Nombre;
             EncuestaRepository.Update(encuestaExistente);
             return Ok();
@@ -265,6 +268,13 @@ namespace EncuestaAPI.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
+            // ✅ Validar si ya fue aplicada
+            var yaAplicada = AplicacionRepository.GetAll().Any(a => a.IdEncuesta == id);
+            if (yaAplicada)
+            {
+                return BadRequest("No se puede eliminar una encuesta que ya ha sido aplicada.");
+            }
+
             var preguntas = PreguntaRepository.GetAll().Where(p => p.IdEncuesta == id).ToList();
             foreach (var pregunta in preguntas)
             {
@@ -276,8 +286,10 @@ namespace EncuestaAPI.Controllers
             {
                 AplicacionRepository.Delete(apli.Id);
             }
+
             EncuestaRepository.Delete(id);
             return Ok();
         }
+
     }
 }
