@@ -1,9 +1,11 @@
 ﻿using EncuestaAPI.Models;
 using EncuestaAPI.Models.DTOs;
 using EncuestaAPI.Repositories;
+using EncuestaAPI.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EncuestaAPI.Controllers
@@ -19,13 +21,15 @@ namespace EncuestaAPI.Controllers
         private readonly Repository<Detallerespuesta> DetallesRespuestaRepository;
         private readonly Repository<Aplicacionencuesta> AplicacionRepository;
         private readonly IValidator<Encuesta> Validator;
+        private readonly IHubContext<listaEncuestahub> _hubContext;
         public ListaEncuestaController(
             Repository<Encuesta> encuestaRepository,
             Repository<Pregunta> preguntaRepository,
             Repository<Respuesta> respuestaRepository,
             Repository<Detallerespuesta> detallesRespuestaRepository,
             Repository<Aplicacionencuesta> aplicacionRepository,
-            IValidator<Encuesta> validator)
+            IValidator<Encuesta> validator,
+             IHubContext<listaEncuestahub> hubContext)
         {
             this.EncuestaRepository = encuestaRepository;
             this.PreguntaRepository = preguntaRepository;
@@ -33,6 +37,7 @@ namespace EncuestaAPI.Controllers
             this.DetallesRespuestaRepository = detallesRespuestaRepository;
             this.AplicacionRepository = aplicacionRepository;
             this.Validator = validator;
+            _hubContext=hubContext;
         }
         [HttpGet]
         public IActionResult Get()
@@ -289,6 +294,39 @@ namespace EncuestaAPI.Controllers
 
             EncuestaRepository.Delete(id);
             return Ok();
+        }
+        [HttpPost("NotificarRespuesta")]
+        public async Task<IActionResult> NotificarRespuesta([FromBody] int encuestaId)
+        {
+            try
+            {
+                // Contar respuestas totales para la encuesta  
+                var aplicaciones = AplicacionRepository.GetAll()
+                    .Where(a => a.IdEncuesta == encuestaId)
+                    .Select(a => a.Id)
+                    .ToList();
+
+                var respuestas = RespuestaRepository.GetAll()
+                    .Where(r => aplicaciones.Contains(r.IdAplicacion))
+                    .ToList();
+
+                int totalRespuestas = respuestas.Count; // Fix: Define and calculate totalRespuestas  
+                int totalAlumnos = respuestas.Select(r => r.NumControlAlumno).Distinct().Count(); // Fix: Define and calculate totalAlumnos  
+
+                // Enviar notificación a todos los clientes conectados  
+                await _hubContext.Clients.All.SendAsync("ActualizarRespuestas", new
+                {
+                    encuestaId = encuestaId,
+                    totalRespuestas = totalRespuestas,
+                    totalAlumnos = totalAlumnos
+                });
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
     }

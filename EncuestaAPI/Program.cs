@@ -50,7 +50,7 @@ builder.Services.AddControllers();
 var app = builder.Build();
 //sngalR
 builder.Services.AddSignalR();
-app.MapHub<listaEncuestahub>("/listaencuestaHub");
+app.MapHub<listaEncuestahub>("hub/listaencuesta");
 
 //builder.Services.AddScoped(typeof(Repository<>), typeof(Repository<>));
 app.UseRouting();

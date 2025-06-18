@@ -14,6 +14,11 @@ function parseJwt(token) {
     const payload = token.split('.')[1];
     return JSON.parse(atob(payload));
 }
+
+function cerrarSesion() {
+    sessionStorage.removeItem("token");
+    window.location.href = "index.html";
+}
 //function cargarUsuario() {
 //    token = sessionStorage.getItem("token");
 //    if (!token) {
@@ -25,8 +30,4 @@ function parseJwt(token) {
 //    nombre = claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
 //    document.querySelector("#cerrarSesion").addEventListener("click", cerrarSesion);
 //}
-function cerrarSesion() {
-    sessionStorage.removeItem("token");
-    window.location.href = "index.html";
-}
 /*cargarUsuario();*/
