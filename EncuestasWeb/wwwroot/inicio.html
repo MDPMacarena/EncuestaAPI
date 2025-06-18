@@ -14,7 +14,7 @@
             <a href="crear.html">Crear</a>
             <a href="inicio.html">Encuestas</a>
             <a href="estadisticas.html">Estadísticas</a>
-            <a id="cerrarSesion" href="" class="material-symbols-outlined">person</a>
+            <a id="cerrarSesion" href="login.html" class="material-symbols-outlined">person</a>
         </div>
     </header>
     <!--movil-->
@@ -31,6 +31,31 @@
             <h3>Encuestas activas</h3>
 
         </div>
+        <div class="modal" id="editarEncuesta">
+            <form style="text-align: left;">
+                <h3>Modificar encuesta</h3>
+                <div id="listaPreguntas">
+                    <!--<label>1.</label>
+                <input type="text" value="¿Qué opinas de el CCA5?"><br>
+                <label>2.</label>
+                <input type="text" value="¿bla bla bla ble ble ble?"><br>
+                <label>3.</label>
+                <input type="text" value="¿si?"><br>-->
+                </div>
+
+                <p id="error"></p>
+                <button type="button" id="cancelarEditar">Cancelar</button>
+                <button id="guardar" type="submit">Guardar</button>
+            </form>
+
+        </div>
+        <div class="modal" id="eliminarEncuesta">
+            <form>
+                <p>¿Deseas eliminar esta encuesta?</p>
+                <button type="button" id="confirmarEliminar">Confirmar</button>
+                <button type="button" id="cancelarEliminar">Cancelar</button>
+            </form>
+        </div>
 
     </main>
     <script src="dinamic.js"></script>
@@ -41,37 +66,137 @@
                 window.location.href = "index.html";
                 return;
             }
-
-            try {
-                const response = await fetch("https://localhost:7154/api/ListaEncuesta", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
+            await cargarEncuestas(); //mmm
+            async function cargarEncuestas() {
+                try {
+                    const response = await fetch("https://localhost:7154/api/ListaEncuesta", {
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error("Error al obtener encuestas");
                     }
-                });
-                if (!response.ok) {
-                    throw new Error("Error al obtener encuestas");
+                    const encuestas = await response.json();
+                    mostrarEncuestas(encuestas);
                 }
-
-                const encuestas = await response.json();
-                mostrarEncuestas(encuestas);
-            }
-            catch (error) {
-                console.error("Error:", error);
-                alert(error.message);
+                catch (error) {
+                    console.error("Error:", error);
+                    alert(error.message);
+                }
             }
         });
-
+        const modalEditar = document.getElementById('editarEncuesta');
+        const modalEliminar = document.getElementById('eliminarEncuesta');
         function mostrarEncuestas(encuestas) {
             const contenedor = document.getElementById("listaEncuestas");
             encuestas.forEach(encuesta => {
                 const encuestaDiv = document.createElement("div");
                 encuestaDiv.className = "encuesta-item";
+                encuestaDiv.dataset.id = encuesta.id;
                 encuestaDiv.innerHTML = ` <label>${encuesta.nombre}</label>
-                            <a href="agregarRespuesta.html?id=${encuesta.id}">
-                                <input type="button" value="Nueva respuesta">
-                            </a>`;
+                            <div id="buttons">
+                                <button data-id="${encuesta.id}" class="material-symbols-outlined btneditar">edit</button>
+                                <button data-id="${encuesta.id}" class="btneliminar material-symbols-outlined">delete</button>
+                                <a href="agregarRespuesta.html?id=${encuesta.id}">
+                                    <input type="button" value="Nueva respuesta">
+                                </a>
+                            </div>`;
                 contenedor.appendChild(encuestaDiv);
             });
+            agregarEventosBotones();
+        }
+        function agregarEventosBotones() {
+            document.querySelectorAll('.btneditar').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const encuestaId = e.target.dataset.id;
+                    await cargarEncuestaParaEditar(encuestaId);
+                    modalEditar.style.display = 'block';
+                });
+            });
+
+            document.querySelectorAll('.btneliminar').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    modalEliminar.dataset.id = e.target.dataset.id;
+                    modalEliminar.style.display = 'block';
+                });
+            });
+
+            document.getElementById('confirmarEliminar').addEventListener('click', async () => {
+                const encuestaId = modalEliminar.dataset.id;
+                await eliminarEncuesta(encuestaId);
+                modalEliminar.style.display = 'none';
+            });
+            document.getElementById('cancelarEditar').addEventListener('click', async () => {
+                modalEditar.style.display = 'none';
+            });
+            document.getElementById('cancelarEliminar').addEventListener('click', async () => {
+                modalEliminar.style.display = 'none';
+            });
+        }
+        // cargar las preguntas d la encuesta
+        async function cargarEncuestaParaEditar(encuestaId) {
+            try {
+                const [encuestaResponse, preguntasResponse] = await Promise.all([
+                    fetch(`https://localhost:7154/api/ListaEncuesta/${encuestaId}`, {
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        }
+                    }),
+                    fetch(`https://localhost:7154/api/ListaEncuesta/Preguntas?encuestaId=${encuestaId}`, {
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        }
+                    })
+                ]);
+
+                if (!encuestaResponse.ok || !preguntasResponse.ok) {
+                    throw new Error("Error al cargar datos de la encuesta");
+                }
+
+                const encuesta = await encuestaResponse.json();
+                const preguntas = await preguntasResponse.json();
+                const formPregu = document.getElementById("listaPreguntas");
+                formPregu.innerHTML = ""; // limpiooooo
+
+                preguntas.forEach((pregunta, num) => {
+                    const label = document.createElement("label");
+                    label.textContent = num + 1;
+                    const input = document.createElement("input");
+                    input.value = pregunta.texto;
+                    input.dataset.id = pregunta.id;
+                    const br = document.createElement("br");
+                    formPregu.append(label, input, br);
+                });
+
+                document.querySelector('#editarEncuesta form').dataset.id = encuestaId;
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+            }
+        }
+        async function eliminarEncuesta(encuestaId) {
+            try {
+                const token = sessionStorage.getItem("token");
+                const response = await fetch(`https://localhost:7154/api/ListaEncuesta/${encuestaId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    const error = result.message;
+                    throw new Error(error);
+                }
+
+                await cargarEncuestas();
+                alert("Encuesta eliminada correctamente");
+            }
+            catch (error) {
+                console.error("Error al eliminar:", error);
+                alert(error.message);
+            }
         }
     </script>
 </body>

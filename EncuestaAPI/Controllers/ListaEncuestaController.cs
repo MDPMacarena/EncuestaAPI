@@ -133,6 +133,8 @@ namespace EncuestaAPI.Controllers
             {
                 if (string.IsNullOrWhiteSpace(dto.nombreRespondedor))
                     return BadRequest("El nombre es requerido");
+                if (string.IsNullOrWhiteSpace(dto.numeroControl))
+                    return BadRequest("El número de control es requerido");
                 var aplicacion = AplicacionRepository.GetAll()
                     .FirstOrDefault(a => a.IdEncuesta == dto.encuestaId && a.FechaFin >= DateTime.UtcNow)
                     ?? new Aplicacionencuesta
@@ -195,6 +197,13 @@ namespace EncuestaAPI.Controllers
                 {
                     return BadRequest("Debe incluir al menos una pregunta");
                 }
+                foreach (var pregunta in dto.Preguntas)
+                {
+                    if (pregunta == null || string.IsNullOrWhiteSpace(dto.Nombre))
+                    {
+                        return BadRequest("Cada pregunta debe tener un texto válido");
+                    }
+                }
                 var validationResult = Validator.Validate(new Encuesta { Nombre = dto.Nombre });
                 if (!validationResult.IsValid)
                 {
@@ -231,89 +240,121 @@ namespace EncuestaAPI.Controllers
                 return StatusCode(500, new
                 {
                     Message = "Error interno del servidor",
-                    //Detail = ex.Message 
                 });
             }
         }
         [HttpPut("{id}")]
-        public IActionResult Put(ListaEncuestaDTO drto)
+        public IActionResult Put(int id, ListaEncuestaDTO drto)
         {
-            var encuestaExistente = EncuestaRepository.Get(drto.Id);
-            if (encuestaExistente == null)
+            try
             {
-                return NotFound("No se encontró la encuesta.");
+                if (string.IsNullOrEmpty(drto.Nombre))
+                {
+                    return BadRequest("El Nombre es requerido.");
+                }
+                var encuestaExistente = EncuestaRepository.Get(drto.Id);
+                if (encuestaExistente == null)
+                {
+                    return NotFound("No se encontro la encuesta.");
+                }
+                var conPreguntas = AplicacionRepository.GetAll().Any(a => a.IdEncuesta == drto.Id && RespuestaRepository.GetAll()
+                                       .Any(r => r.IdAplicacion == a.Id));
+                if (conPreguntas)
+                {
+                    return BadRequest(new
+                    {
+                        message = "No se puede editar una encuesta que ya ha sido aplicada."
+                    });
+                }
+                var validationResult = Validator.Validate(new Encuesta
+                {
+                    Nombre = drto.Nombre ?? ""
+                });
+
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+                }
+
+                encuestaExistente.Nombre = drto.Nombre;
+                EncuestaRepository.Update(encuestaExistente);
+
+                var preguExistentes = PreguntaRepository.GetAll().Where(p => p.IdEncuesta == id).ToList();
+                preguExistentes.ForEach(p => PreguntaRepository.Delete(p.Id));
+
+                int orden = 1;
+                foreach (var textoPregunta in drto.Preguntas ?? Enumerable.Empty<string>())
+                {
+                    if (!string.IsNullOrWhiteSpace(textoPregunta))
+                    {
+                        PreguntaRepository.Insert(new Pregunta
+                        {
+                            Texto = textoPregunta.Trim(),
+                            IdEncuesta = id,
+                            Orden = orden++
+                        });
+                    }
+                }
+                return Ok(new { message = "Encuesta actualizada correctamente" });
             }
-
-            // ✅ Validar si ya fue aplicada
-            var yaAplicada = AplicacionRepository.GetAll().Any(a => a.IdEncuesta == drto.Id);
-            if (yaAplicada)
+            catch (Exception ex)
             {
-                return BadRequest("No se puede editar una encuesta que ya ha sido aplicada.");
+                return StatusCode(500, new
+                {
+                    message = "Error interno al procesar la solicitud",
+                    detalle = ex.Message
+                });
             }
-
-            var validationResult = Validator.Validate(new Encuesta
-            {
-                Nombre = drto.Nombre ?? ""
-            });
-
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-            }
-
-            if (drto.Id == null || string.IsNullOrEmpty(drto.Nombre))
-            {
-                return BadRequest("El ID y el Nombre son requeridos.");
-            }
-
-            encuestaExistente.Nombre = drto.Nombre;
-            EncuestaRepository.Update(encuestaExistente);
-            return Ok();
         }
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            // ✅ Validar si ya fue aplicada
-            var yaAplicada = AplicacionRepository.GetAll().Any(a => a.IdEncuesta == id);
-            if (yaAplicada)
+            var aplicaciones = AplicacionRepository.GetAll().Where(e => e.IdEncuesta == id).ToList();
+            var borrarEncuesta = EncuestaRepository.Get(id);
+            if (borrarEncuesta == null)
             {
-                return BadRequest("No se puede eliminar una encuesta que ya ha sido aplicada.");
+                return NotFound("La encuesta que busca no se encuentra ^^");
             }
-
+            foreach (var a in aplicaciones)
+            {
+                var conPreguntas = RespuestaRepository.GetAll().Any(c => c.IdAplicacion == a.Id);
+                if (conPreguntas)
+                {
+                    return BadRequest(new
+                    {
+                        message = "No se puede eliminar una encuesta que ya ha sido aplicada."
+                    });
+                }
+            }
             var preguntas = PreguntaRepository.GetAll().Where(p => p.IdEncuesta == id).ToList();
             foreach (var pregunta in preguntas)
             {
                 PreguntaRepository.Delete(pregunta.Id);
             }
 
-            var aplicaciones = AplicacionRepository.GetAll().Where(e => e.IdEncuesta == id).ToList();
             foreach (var apli in aplicaciones)
             {
                 AplicacionRepository.Delete(apli.Id);
             }
-
             EncuestaRepository.Delete(id);
-            return Ok();
+            return Ok(new { message = "Encuesta eliminada correctamente!" });
         }
         [HttpPost("NotificarRespuesta")]
         public async Task<IActionResult> NotificarRespuesta([FromBody] int encuestaId)
         {
             try
             {
-                // Contar respuestas totales para la encuesta  
-                var aplicaciones = AplicacionRepository.GetAll()
-                    .Where(a => a.IdEncuesta == encuestaId)
-                    .Select(a => a.Id)
-                    .ToList();
+                var aplicacionesAll = AplicacionRepository.GetAll() ?? new List<Aplicacionencuesta>();
+                var respuestasAll = RespuestaRepository.GetAll() ?? new List<Respuesta>();
 
-                var respuestas = RespuestaRepository.GetAll()
-                    .Where(r => aplicaciones.Contains(r.IdAplicacion))
-                    .ToList();
+                var aplicaciones = aplicacionesAll.Where(a => a.IdEncuesta == encuestaId).Select(a => a.Id).ToList();
 
-                int totalRespuestas = respuestas.Count; // Fix: Define and calculate totalRespuestas  
-                int totalAlumnos = respuestas.Select(r => r.NumControlAlumno).Distinct().Count(); // Fix: Define and calculate totalAlumnos  
+                var respuestas = respuestasAll.Where(r => aplicaciones.Contains(r.IdAplicacion)).ToList();
 
-                // Enviar notificación a todos los clientes conectados  
+                int totalRespuestas = respuestas.Count;
+                int totalAlumnos = respuestas.Where(r => !string.IsNullOrEmpty(r.NumControlAlumno)).Select(r => r.NumControlAlumno).Distinct().Count();
+
+                // notisss 
                 await _hubContext.Clients.All.SendAsync("ActualizarRespuestas", new
                 {
                     encuestaId = encuestaId,
@@ -327,6 +368,35 @@ namespace EncuestaAPI.Controllers
             {
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        [HttpGet("UltimasRespuestas")]
+        public IActionResult UltimasRespuestas()
+        {
+            var respuestas = RespuestaRepository.GetAll().OrderByDescending(r => r.Fecha).Take(30).Select(r => new
+            {
+                nombreEncuesta = r.IdAplicacionNavigation != null && r.IdAplicacionNavigation.IdEncuestaNavigation != null
+                    ? r.IdAplicacionNavigation.IdEncuestaNavigation.Nombre : "Sin nombre",
+                nombreAlumno = r.NombreAlumno ?? "Desconocido",
+                numeroControl = r.NumControlAlumno ?? "Desconocido",
+                fecha = r.Fecha
+            }).ToList();
+
+            return Ok(respuestas);
+        }
+        [HttpGet("Estadisticas")]
+        public IActionResult Estadisticas()
+        {
+            var totalEncuestas = EncuestaRepository.GetAll().Count();
+            var totalAlumnos = RespuestaRepository.GetAll().Select(r => r.NumControlAlumno).Distinct().Count();
+            var totalRespuestas = RespuestaRepository.GetAll().Count();
+
+            return Ok(new
+            {
+                totalEncuestas,
+                totalAlumnos,
+                totalRespuestas
+            });
         }
 
     }

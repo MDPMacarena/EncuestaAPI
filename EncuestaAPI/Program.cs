@@ -16,7 +16,7 @@ builder.Services.AddCors(x =>
 {
     x.AddPolicy("todos", builder =>
     {
-        builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        builder.AllowCredentials().AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:7233");
     });
 });
 
@@ -47,10 +47,10 @@ builder.Services.AddScoped(typeof(UsuarioValidator));
 builder.Services.AddScoped<IValidator<Encuesta>, ListaEncuestaValidator>();
 
 builder.Services.AddControllers();
-var app = builder.Build();
 //sngalR
 builder.Services.AddSignalR();
-app.MapHub<listaEncuestahub>("hub/listaencuesta");
+var app = builder.Build();
+app.MapHub<listaEncuestahub>("/listaEncuestahub");
 
 //builder.Services.AddScoped(typeof(Repository<>), typeof(Repository<>));
 app.UseRouting();

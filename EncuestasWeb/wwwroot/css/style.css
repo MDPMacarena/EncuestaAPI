@@ -103,7 +103,6 @@ body {
 
 #lienzo {
     padding: 20px;
-    text-align: right;
     background-color: white;
 }
 
@@ -115,18 +114,27 @@ body {
 
 input {
     height: 3vh;
+    width: 93%;
     border: none;
-    margin: 10px 0;
+    margin: 10px 5px;
+    padding: 0 5px;
+    color: gray; /*cambieee*/
 }
 
 button {
     width: 20vw;
     height: 3vh;
-    margin: 20px 0;
+    margin: 20px 10px;
     cursor: pointer;
+    color: #6D862F;
     border-radius: 10px;
     border: 1px solid darkgray;
 }
+
+    button:hover {
+        background-color: #A8C562;
+        color: white !important;
+    }
 
 #agregarRespuesta {
     display: grid;
@@ -136,11 +144,25 @@ button {
     width: 40vw;
     height: 30vh;
     padding: 20px;
+    color: white;
+    font-weight: bold;
+    text-align: left;
     margin: 10vh auto;
     border-radius: 5px;
-    text-align: center;
     background-color: #6D862F;
 }
+
+    #login input {
+        border-radius: 10px;
+        padding: 2px 8px;
+        color: lightgray;
+    }
+
+    #login button {
+        width: 95%;
+        font-weight: bold;
+        box-shadow: 1px 1px 10px 1px #A8C562;
+    }
 
 #menuMovil {
     display: none;
@@ -198,6 +220,97 @@ button {
     thead {
         font-size: 23px;
     }
+
+    .modal form {
+        margin: 50% auto !important;
+        font-size: 25px;
+        width: 75% !important;
+    }
+
+    .modal button {
+        height: 6vh;
+        width: 34vw;
+        margin: 2vh 1vw !important;
+        font-size: 17px;
+    }
+
+    input {
+        width: 85%;
+        height: 4vh;
+        font-size: 16px;
+    }
+
+    #error {
+        font-size: 20px !important;
+        margin: 10px;
+    }
+
+    .btneditar, .btneliminar {
+        width: auto !important;
+        height: 5vh;
+        margin: 2px !important;
+    }
+
+    h1 {
+        margin: -.5vh 15vw !important;
+    }
+
+    #estadisticas {
+        width: 60vw !important;
+    }
+
+    #respuestasTable {
+        font-size: 16px;
+    }
+
+        #respuestasTable thead {
+            font-size: 12px;
+        }
+
+    #lienzo input {
+        width: 85%;
+        padding: 0 5px;
+        box-sizing: border-box;
+    }
+
+    button {
+        width: 40vw;
+        height: 5vh;
+        margin: 10px;
+        color: #6D862F;
+    }
+
+    #preguntas table thead, tbody {
+        font-size: 14px;
+    }
+
+    #preguntas input[type="radio"] {
+        height: 17px;
+    }
+
+    #agregar {
+        background-color: #6D862F;
+        color: white;
+        font-size: 30px;
+        width: 8vw;
+        text-align: center;
+        padding: 9px;
+        border-radius: 20px;
+        margin: 85% 0 0 75vw;
+        display: block !important;
+    }
+
+    #login {
+        width: 80vw;
+        height: auto;
+        padding: 20px;
+        color: white;
+        font-weight: bold;
+    }
+}
+
+#agregar {
+    display: none;
 }
 
 table {
@@ -226,5 +339,71 @@ tbody {
 }
 
 h1 {
-    margin: -.5vh 15vw;
+    margin: -.5vh 2vw;
+}
+
+.modal {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: #0000004b;
+}
+
+    .modal form {
+        width: 45%;
+        height: auto;
+        padding: 30px;
+        color: whitesmoke;
+        margin: 21% auto;
+        font-weight: bold;
+        text-align: center;
+        border-radius: 20px;
+        background-color: #6D862F;
+    }
+
+    .modal button {
+        color: #6D862F;
+        font-weight: bold;
+        margin: 2vh 1vw;
+    }
+
+#eliminarEncuesta {
+    display: none;
+}
+
+#editarEncuesta {
+    display: none;
+}
+
+#error {
+    font-size: 15px;
+    color: darkred;
+    text-align: center;
+}
+
+#buttons {
+    height: 10vh;
+    margin: -10px;
+    border: none;
+}
+
+.btneditar, .btneliminar {
+    width: auto;
+    margin: 15px;
+}
+
+#estadisticas {
+    background-color: whitesmoke;
+    width: 30vw;
+    padding: 10px;
+    border-radius: 10px;
+    color: darkslategray;
+}
+
+span {
+    font-weight: bold;
+    color: #6D862F;
+    margin: 0 10px
 }
