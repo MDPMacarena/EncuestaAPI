@@ -52,6 +52,7 @@ builder.Services.AddSignalR();
 var app = builder.Build();
 app.MapHub<listaEncuestahub>("/listaEncuestahub");
 
+
 //builder.Services.AddScoped(typeof(Repository<>), typeof(Repository<>));
 app.UseRouting();
 app.UseCors("todos");
