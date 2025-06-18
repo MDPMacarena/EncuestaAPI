@@ -369,7 +369,6 @@ namespace EncuestaAPI.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
-
         [HttpGet("UltimasRespuestas")]
         public IActionResult UltimasRespuestas()
         {
@@ -398,6 +397,5 @@ namespace EncuestaAPI.Controllers
                 totalRespuestas
             });
         }
-
     }
 }

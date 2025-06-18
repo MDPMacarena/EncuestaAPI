@@ -74,7 +74,7 @@
 
             async function cargarEncuestas() {
                 try {
-                    const response = await fetch("https://localhost:7154/api/ListaEncuesta", {
+                    const response = await fetch("https://localhost:44397/api/ListaEncuesta", {
                         headers: {
                             "Authorization": `Bearer ${token}`
                         }
@@ -91,7 +91,6 @@
                     document.getElementById('error').textContent = error.message;
                 }
             };
-
             function mostrarEncuestas(encuestas) {
                 const contenedor = document.getElementById("listaEncuestas");
                 encuestas.forEach(encuesta => {
@@ -155,7 +154,6 @@
 
                 await actualizarEncuesta(encuestaId, datosGuardar);
             });
-
             // cargar las preguntas d la encuesta
             async function cargarEncuestaParaEditar(encuestaId) {
                 try {
