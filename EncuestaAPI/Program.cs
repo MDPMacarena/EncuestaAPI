@@ -48,7 +48,9 @@ builder.Services.AddScoped<IValidator<Encuesta>, ListaEncuestaValidator>();
 
 builder.Services.AddControllers();
 var app = builder.Build();
-
+//sngalR
+builder.Services.AddSignalR();
+app.MapHub<listaEncuestahub>("/listaencuestaHub");
 
 //builder.Services.AddScoped(typeof(Repository<>), typeof(Repository<>));
 app.UseRouting();

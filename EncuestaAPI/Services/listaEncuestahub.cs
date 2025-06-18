@@ -2,8 +2,7 @@
 
 namespace EncuestaAPI.Services
 {
-    public class ControladorHub:Hub
+    public class listaEncuestahub:Hub
     {
-
     }
 }
