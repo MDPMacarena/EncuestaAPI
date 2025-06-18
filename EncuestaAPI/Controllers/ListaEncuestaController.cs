@@ -40,28 +40,30 @@ namespace EncuestaAPI.Controllers
             _hubContext=hubContext;
         }
         [HttpGet]
+
+        [HttpGet]
         public IActionResult Get()
         {
             try
             {
-                var id = int.Parse(User.FindFirst("Id")?.Value ?? "0");
-                var encuestas = EncuestaRepository.GetAll().Where(e => e.IdUsuario == id).OrderBy(x => x.FechaCreacion).Select(e => new
+                var encuestas = EncuestaRepository.GetAll()
+                .OrderBy(x => x.FechaCreacion)
+                .Select(e => new
                 {
                     id = e.Id,
                     nombre = e.Nombre,
-                    fecha = e.FechaCreacion
+                    fecha = e.FechaCreacion,
+                    creador = e.IdUsuario // opcional
                 }).ToList();
 
                 return Ok(encuestas);
             }
             catch (Exception excep)
             {
-                return StatusCode(500, new
-                {
-                    error = excep.Message
-                });
+                return StatusCode(500, new { error = excep.Message });
             }
         }
+
         [HttpGet("AplicacionActiva")]
         public IActionResult GetAplicacionActiva(int encuestaId)
         {
@@ -309,12 +311,21 @@ namespace EncuestaAPI.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var aplicaciones = AplicacionRepository.GetAll().Where(e => e.IdEncuesta == id).ToList();
             var borrarEncuesta = EncuestaRepository.Get(id);
             if (borrarEncuesta == null)
             {
                 return NotFound("La encuesta que busca no se encuentra ^^");
             }
+
+            // ✅ Validar que el usuario autenticado sea el creador de la encuesta
+            var userId = int.Parse(User.FindFirst("Id")?.Value ?? "0");
+            if (borrarEncuesta.IdUsuario != userId)
+            {
+                return Unauthorized("No tienes permiso para eliminar esta encuesta.");
+            }
+
+            var aplicaciones = AplicacionRepository.GetAll().Where(e => e.IdEncuesta == id).ToList();
+
             foreach (var a in aplicaciones)
             {
                 var conPreguntas = RespuestaRepository.GetAll().Any(c => c.IdAplicacion == a.Id);
@@ -326,6 +337,7 @@ namespace EncuestaAPI.Controllers
                     });
                 }
             }
+
             var preguntas = PreguntaRepository.GetAll().Where(p => p.IdEncuesta == id).ToList();
             foreach (var pregunta in preguntas)
             {
@@ -336,6 +348,7 @@ namespace EncuestaAPI.Controllers
             {
                 AplicacionRepository.Delete(apli.Id);
             }
+
             EncuestaRepository.Delete(id);
             return Ok(new { message = "Encuesta eliminada correctamente!" });
         }
