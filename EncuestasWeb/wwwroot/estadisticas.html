@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Encuestas</a></h1>
+        <h3 id="usuario"></h3>
+            <div id="menuPc">
+                <a href="crear.html">Crear</a>
+                <a href="inicio.html">Encuestas</a>
+                <a href="estadisticas.html">Estadísticas</a>
+                <a id="cerrarSesion" href="" class="material-symbols-outlined">person</a>
+            </div>
+    </header>
+    <!--movil-->
+    <aside id="menuMovil" style="translate: -70vw;">
+        <a id="menu" class="material-symbols-outlined">menu</a>
+        <a href="login.html" class="material-symbols-outlined"><span>Administrador</span> person</a><br>
+        <a href="crear.html">Crear</a><br>
+        <a href="inicio.html">Encuestas</a><br>
+        <a href="estadisticas.html">Estadísticas</a><br>
+        <a id="cerrarSesion" href="login.html">Cerrar sesión</a><br>
+    </aside>
+    <main>
+        <div>
+            <h2 style="color:#6D862F">Registro</h2>
+            <div id="estadisticas">
+                <label>Encuestas creadas: <span id="totalEncuestas">0</span></label><br>
+                <label>Total de alumnos entrevistados: <span id="totalAlumnos">0</span></label><br>
+                <label>Total de respuestas: <span id="totalRespuestas">0</span></label><br>
+            </div>
+
+
+            <table id="respuestasTable">
+                <thead>
+                    <tr>
+                        <th>Encuesta</th>
+                        <th>Nombre</th>
+                        <th>Número de control</th>
+                        <th>Última respuesta</th>
+                    </tr>
+                </thead>
+                <tbody id="respuestasTbody">
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script src="dinamic.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const token = sessionStorage.getItem("token");
+            if (!token) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            const connection = new signalR.HubConnectionBuilder().withUrl("https://localhost:7154/listaEncuestahub", {
+                accessTokenFactory: () => token
+            }).configureLogging(signalR.LogLevel.Information).build();
+
+            connection.on("ActualizarRespuestas", (data) => {
+                if (data) {
+                    document.getElementById('totalAlumnos').textContent = data.totalAlumnos ?? 0;
+                    const totalRes = document.getElementById('totalRespuestas');
+                    const current = parseInt(totalRes.textContent) || 0;
+                    totalRes.textContent = current + 1;
+                }
+            });
+
+
+            const response = await fetch("https://localhost:7154/api/ListaEncuesta/UsuarioActual", {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            document.getElementById("usuario").textContent = `Bienvenido, ${data.name}`;
+
+
+
+            try {
+                await connection.start();
+                await cargarDatosIniciales();
+            }
+            catch (err) {
+                console.error("Error al conectarse:", err);
+            }
+
+            async function cargarDatosIniciales() {
+                try {
+                    const estadisticasResponse = await fetch("https://localhost:7154/api/ListaEncuesta/Estadisticas", {
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        }
+                    });
+                    const respuestasResponse = await fetch("https://localhost:7154/api/ListaEncuesta/UltimasRespuestas", {
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        }
+                    });
+
+                    if (!estadisticasResponse.ok || !respuestasResponse.ok) {
+                        throw new Error("Error al obtener los datos");
+                    }
+
+                    const estadisticas = await estadisticasResponse.json();
+                    const respuestas = await respuestasResponse.json();
+
+                    console.log("Respuestas obtenidas:", respuestas);
+
+                    document.getElementById('totalEncuestas').textContent = estadisticas.totalEncuestas ?? 0;
+                    document.getElementById('totalAlumnos').textContent = estadisticas.totalAlumnos ?? 0;
+                    document.getElementById('totalRespuestas').textContent = estadisticas.totalRespuestas ?? 0;
+
+                    const tbody = document.getElementById('respuestasTbody');
+                    tbody.innerHTML = '';
+                    respuestas.forEach(r => {
+                        console.log("Respuesta recibida:", r);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${r.nombreEncuesta}</td>
+                                                <td>${r.nombreAlumno}</td>
+                                                <td>${r.numeroControl}</td>
+                                                <td>${new Date(r.fecha).toLocaleString()}</td>`;
+                        tbody.appendChild(tr);
+                    });
+
+                } catch (error) {
+                    alert("No se cargaron los datos");
+                }
+            }
+
+            await cargarDatosIniciales();
+        });
+    </script>
+</body>
+</html>

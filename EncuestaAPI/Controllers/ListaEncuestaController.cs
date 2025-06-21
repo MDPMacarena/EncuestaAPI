@@ -309,8 +309,6 @@ namespace EncuestaAPI.Controllers
             {
                 return NotFound("La encuesta que busca no se encuentra ^^");
             }
-
-            // ✅ Validar que el usuario autenticado sea el creador de la encuesta
             var userId = int.Parse(User.FindFirst("Id")?.Value ?? "0");
             if (borrarEncuesta.IdUsuario != userId)
             {
